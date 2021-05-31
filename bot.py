@@ -1,4 +1,5 @@
 from aiogram import Bot, types
+from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher import Dispatcher
 from aiogram.dispatcher.storage import FSMContext
 from aiogram.utils import executor
@@ -7,6 +8,7 @@ from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from config import TOKEN_BOT
 from test import Test
 import keyboard as kb
+from make_file import make_file
 
 storage = MemoryStorage()
 bot = Bot(token=TOKEN_BOT)
@@ -17,10 +19,76 @@ dp = Dispatcher(bot, storage=storage)
 async def enter_test(message: types.Message):
     await message.answer(
         "Вы начали тестирование.\n"
-        "Вопрос №1. \n\n"
-        "Есть ли место, где вы храните информацию для принятия решений?",
-        reply_markup=kb.answer_kb)
-    await Test.Q1.set()
+        "Вы согласны на обработку персональных данных?",
+        reply_markup=kb.one_time_answer)
+    await Test.INFO.set()
+
+
+@dp.message_handler(state=Test.INFO)
+async def answer_personal_data(message: types.Message, state: FSMContext):
+    answer = message.text
+    if answer == "Нет":
+        await message.reply('Завершаем опрос.\n',
+                        reply_markup=types.ReplyKeyboardRemove())
+        await state.finish()
+        return
+    await message.answer("ФИО: ")
+    await Test.next()
+
+
+@dp.message_handler(state=Test.FIO)
+async def answer_info(message: types.Message, state: FSMContext):
+    answer = message.text
+    async with state.proxy() as data:
+        data["FIO"] = answer
+    await message.answer("Ваша почта: ")
+    await Test.next()
+
+
+@dp.message_handler(state=Test.EMAIL)
+async def answer_email(message: types.Message, state: FSMContext):
+    answer = message.text
+    async with state.proxy() as data:
+        data["Email"] = answer
+    await message.answer("Форма организации: ")
+    await Test.next()
+
+
+@dp.message_handler(state=Test.ORG_FORM)
+async def answer_org_from(message: types.Message, state: FSMContext):
+    answer = message.text
+    async with state.proxy() as data:
+        data["Org_form"] = answer
+    await message.answer("Имя организации: ")
+    await Test.next()
+
+
+@dp.message_handler(state=Test.ORG_NAME)
+async def answer_org_name(message: types.Message, state: FSMContext):
+    answer = message.text
+    async with state.proxy() as data:
+        data["Org_name"] = answer
+    await message.answer("Должность: ")
+    await Test.next()
+
+
+@dp.message_handler(state=Test.POS)
+async def answer_position(message: types.Message, state: FSMContext):
+    answer = message.text
+    async with state.proxy() as data:
+        data["Position"] = answer
+    await message.answer("Номер телефона: ")
+    await Test.next()
+
+
+@dp.message_handler(state=Test.PHONE)
+async def answeer_phone(message: types.Message, state: FSMContext):
+    answer = message.text
+    async with state.proxy() as data:
+        data["Phone"] = answer
+    await message.answer(
+        "Вопрос №1\nЕсть ли место, где вы храните информацию для принятия решений?", reply_markup=kb.answer_kb)
+    await Test.next()
 
 
 @dp.message_handler(state=Test.Q1)
@@ -158,14 +226,14 @@ async def finish_test(message: types.Message, state: FSMContext):
         data["answer13"] = answer
     await message.answer("Спасибо за ваши ответы!\n", reply_markup=kb.end_kb)
     data = await state.get_data()
+    make_file(data)
     await state.finish()
 
 
 @dp.message_handler(commands=['start'])
 async def process_start_command(message: types.Message):
     await message.reply(
-        "Привет!\n",
-        "Этот бот предназначен для опроса. Выберите одну из опций\n",
+        "Привет!\nЭтот бот предназначен для опроса. Выберите одну из опций\n",
         reply_markup=kb.info_kb)
 
 
@@ -181,6 +249,20 @@ async def any_message(message: types.Message):
     await message.answer(
         "Вы уже прошли опрос. Если хотите пройти заново - перезапустите бота\n"
     )
+
+
+@dp.message_handler(commands=['cancel'])
+# @dp.message_handler(Text(equals='cancel', ignore_case=True), state='*')
+async def cancel_handler(message: types.Message, state: FSMContext):
+    """
+    Allow user to cancel any action
+    """
+    current_state = await state.get_state()
+    if current_state is None:
+        return
+    await state.finish()
+    await message.reply('Завершаем опрос.\n',
+                        reply_markup=types.ReplyKeyboardRemove())
 
 
 if __name__ == '__main__':

@@ -1,6 +1,13 @@
 from aiogram.dispatcher.filters.state import StatesGroup, State
 
 class Test(StatesGroup):
+    INFO = State()
+    FIO = State()
+    EMAIL = State()
+    ORG_FORM = State()
+    ORG_NAME = State()
+    POS = State()
+    PHONE = State()
     Q1 = State()
     Q2 = State()
     Q3 = State()
