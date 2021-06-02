@@ -250,19 +250,22 @@ async def any_message(message: types.Message):
         "Вы уже прошли опрос. Если хотите пройти заново - перезапустите бота\n"
     )
 
-
-@dp.message_handler(commands=['cancel'])
-# @dp.message_handler(Text(equals='cancel', ignore_case=True), state='*')
+@dp.message_handler(state='*', commands=['cancel'])
 async def cancel_handler(message: types.Message, state: FSMContext):
-    """
-    Allow user to cancel any action
-    """
-    current_state = await state.get_state()
-    if current_state is None:
-        return
+    await message.answer("Спасибо за ваши ответы!\n")
     await state.finish()
-    await message.reply('Завершаем опрос.\n',
-                        reply_markup=types.ReplyKeyboardRemove())
+# @dp.message_handler(state='*', commands='cancel')
+# @dp.message_handler(Text(equals='cancel', ignore_case=True), state='*')
+# async def cancel_handler(message: types.Message, state: FSMContext):
+#     """
+#     Allow user to cancel any action
+#     """
+#     current_state = await state.get_state()
+#     if current_state is None:
+#         return
+#     await state.finish()
+#     await message.reply('Завершаем опрос.\n',
+#                         reply_markup=types.ReplyKeyboardRemove())
 
 
 if __name__ == '__main__':
