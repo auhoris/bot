@@ -9,6 +9,12 @@ from config import TOKEN_BOT
 from test import Test
 import keyboard as kb
 from make_file import make_file
+from count_yes import count_yes
+
+# TODO:  <03-06-21, yourname> #
+# 1) Cчетчик
+# 2) Добавить неск вопросов
+# 3) По возможности разобраться с cancel
 
 storage = MemoryStorage()
 bot = Bot(token=TOKEN_BOT)
@@ -29,7 +35,7 @@ async def answer_personal_data(message: types.Message, state: FSMContext):
     answer = message.text
     if answer == "Нет":
         await message.reply('Завершаем опрос.\n',
-                        reply_markup=types.ReplyKeyboardRemove())
+                            reply_markup=types.ReplyKeyboardRemove())
         await state.finish()
         return
     await message.answer("ФИО: ")
@@ -87,7 +93,8 @@ async def answeer_phone(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data["Phone"] = answer
     await message.answer(
-        "Вопрос №1\nЕсть ли место, где вы храните информацию для принятия решений?", reply_markup=kb.answer_kb)
+        "Вопрос №1\nЕсть ли место, где вы храните информацию для принятия решений?",
+        reply_markup=kb.answer_kb)
     await Test.next()
 
 
@@ -215,17 +222,100 @@ async def answer_q12(message: types.Message, state: FSMContext):
     answer = message.text
     async with state.proxy() as data:
         data["answer12"] = answer
-    await message.answer("Вопрос №13\n" "Обрабатываете ли Вы эти данные?")
+    await message.answer("Вопрос №13\n" "Вы агрегируете данные?")
     await Test.next()
 
 
 @dp.message_handler(state=Test.Q13)
-async def finish_test(message: types.Message, state: FSMContext):
+async def answer_q13(message: types.Message, state: FSMContext):
     answer = message.text
     async with state.proxy() as data:
         data["answer13"] = answer
+    await message.answer("Вопрос №14\n" "Обрабатываете ли Вы эти данные?")
+    await Test.next()
+
+
+@dp.message_handler(state=Test.Q14)
+async def answer_q14(message: types.Message, state: FSMContext):
+    answer = message.text
+    async with state.proxy() as data:
+        data["answer14"] = answer
+    await message.answer(
+        "Вопрос №15\n"
+        "Входит ли оценка в функциональные обязанности кого-то из участников организации?"
+    )
+    await Test.next()
+
+
+@dp.message_handler(state=Test.Q15)
+async def answer_q15(message: types.Message, state: FSMContext):
+    answer = message.text
+    async with state.proxy() as data:
+        data["answer15"] = answer
+    await message.answer(
+        "Вопрос №16\n"
+        "У вас есть \"План оценки социального эффекта / воздействия на общество (impact)\", который определяет, каким образом, в какие сроки и кем будет собрана доказательная информация (evidence)?"
+    )
+    await Test.next()
+
+
+@dp.message_handler(state=Test.Q16)
+async def answer_q16(message: types.Message, state: FSMContext):
+    answer = message.text
+    async with state.proxy() as data:
+        data["answer16"] = answer
+    await message.answer(
+        "Вопрос №17\n"
+        "Сотрудники, отвечающие за сбор данных, получают поддержку, которая обеспечивает регулярное поступление достоверной доказательной информации?"
+    )
+    await Test.next()
+
+
+@dp.message_handler(state=Test.Q17)
+async def answer_q17(message: types.Message, state: FSMContext):
+    answer = message.text
+    async with state.proxy() as data:
+        data["answer17"] = answer
+    await message.answer(
+        "Вопрос №18\n"
+        "Вы собираете подтверждающую информацию \"до\" и \"после\" того, как ваши благополучатели смогут наблюдать изменения, возникающие в результате нашей работе?"
+    )
+    await Test.next()
+
+
+@dp.message_handler(state=Test.Q18)
+async def answer_q18(message: types.Message, state: FSMContext):
+    answer = message.text
+    async with state.proxy() as data:
+        data["answer18"] = answer
+    await message.answer(
+        "Вопрос №19\n"
+        "Чтобы выяснить, какие изменения (и почему) происходят в практике ваших благополучателей, вы сопоставляете информацию разного типа?"
+    )
+    await Test.next()
+
+
+@dp.message_handler(state=Test.Q19)
+async def answer_q19(message: types.Message, state: FSMContext):
+    answer = message.text
+    async with state.proxy() as data:
+        data["answer19"] = answer
+    await message.answer(
+        "Вопрос №20\n"
+        "Вы можете объяснить, каким образом результаты вашей работы связаны с решением комплексных экономических, социальных и экологических проблем?"
+    )
+    await Test.next()
+
+
+@dp.message_handler(state=Test.Q20)
+async def finish_test(message: types.Message, state: FSMContext):
+    answer = message.text
+    async with state.proxy() as data:
+        data["answer20"] = answer
     await message.answer("Спасибо за ваши ответы!\n", reply_markup=kb.end_kb)
     data = await state.get_data()
+    c_of_yes = count_yes(data)
+    await message.answer(f"{c_of_yes}/20 ответов 'Да'\n")
     make_file(data)
     await state.finish()
 
@@ -250,10 +340,13 @@ async def any_message(message: types.Message):
         "Вы уже прошли опрос. Если хотите пройти заново - перезапустите бота\n"
     )
 
+
 @dp.message_handler(state='*', commands=['cancel'])
 async def cancel_handler(message: types.Message, state: FSMContext):
     await message.answer("Спасибо за ваши ответы!\n")
     await state.finish()
+
+
 # @dp.message_handler(state='*', commands='cancel')
 # @dp.message_handler(Text(equals='cancel', ignore_case=True), state='*')
 # async def cancel_handler(message: types.Message, state: FSMContext):
@@ -266,7 +359,6 @@ async def cancel_handler(message: types.Message, state: FSMContext):
 #     await state.finish()
 #     await message.reply('Завершаем опрос.\n',
 #                         reply_markup=types.ReplyKeyboardRemove())
-
 
 if __name__ == '__main__':
     executor.start_polling(dp)
